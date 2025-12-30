@@ -131,8 +131,7 @@ for _, row in rec_df.iterrows():
                 padding:15px; 
                 border-radius:10px; 
                 margin-bottom:15px; 
-                background-color:#ffffff;  /* white background */
-                color:black;               /* black text */
+                color:white;               /* black text */
                 box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
             ">
                 <h3 style="color:black;">{row['Model']}</h3>
