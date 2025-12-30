@@ -7,9 +7,8 @@ from sklearn.neighbors import NearestNeighbors
 # Page Config
 # -----------------------------
 st.set_page_config(page_title="Laptop Recommender", layout="wide")
-st.title("💻 Smart Laptop Recommendation System")
-st.caption("Find the best laptop based on your requirements")
-df.columns = df.columns.str.strip()
+st.title("💻 Laptop Recommendation System")
+st.caption("Get the best laptop based on your requirements")
 
 # -----------------------------
 # Load Dataset
@@ -17,22 +16,24 @@ df.columns = df.columns.str.strip()
 @st.cache_data
 def load_data():
     df = pd.read_csv("laptop.csv")
-    # Drop unwanted column if exists
+    # Strip column names to avoid KeyErrors
+    df.columns = df.columns.str.strip()
+    # Drop unnecessary column if exists
     if "Unnamed: 0" in df.columns:
         df.drop(columns=["Unnamed: 0"], inplace=True)
     return df
 
 df = load_data()
-df_display = df.copy()  # Keep original for user output
+df_display = df.copy()  # Keep original for display
 
 # -----------------------------
-# Clean & Parse Numeric Columns
+# Clean & Parse Columns
 # -----------------------------
 
 # Price
-df["Price"] = df["Price"].str.replace("₹", "").str.replace(",", "").astype(int)
+df["Price"] = df["Price"].str.replace("₹","").str.replace(",","").astype(int)
 
-# RAM parsing
+# RAM
 def parse_ram(x):
     try:
         if pd.isna(x):
@@ -40,16 +41,14 @@ def parse_ram(x):
         return int(str(x).split()[0])
     except:
         return 0
-
 df["Ram_GB"] = df["Ram"].apply(parse_ram)
 
-# SSD parsing (handles GB, TB, multiple values like '256GB/512GB', missing)
+# SSD
 def parse_ssd(x):
     try:
         if pd.isna(x):
             return 0
         x = str(x).upper()
-        # Split multiple SSDs
         x_list = x.replace("GB","").replace("TB","").split("/")
         numbers = []
         for val in x_list:
@@ -57,7 +56,6 @@ def parse_ssd(x):
             if val == "":
                 continue
             num = float(val)
-            # Convert TB to GB
             if "TB" in x:
                 num *= 1024
             numbers.append(num)
@@ -66,27 +64,33 @@ def parse_ssd(x):
         return int(max(numbers))
     except:
         return 0
-
 df["SSD_GB"] = df["SSD"].apply(parse_ssd)
 
 # Rating
-df["Rating"] = df["Rating"].fillna(df["Rating"].mean())
+if "Rating" in df.columns:
+    df["Rating"] = df["Rating"].fillna(df["Rating"].mean())
+else:
+    df["Rating"] = 0  # default if column missing
 
-if "Graphics" in df.columns:
-    def graphics
 # Graphics flag
-def graphics_flag(x):
-    x = str(x)
-    if "Intel" in x or "UHD" in x:
-        return 0  # Integrated
-    return 1  # Dedicated
-
-df["Graphics_Flag"] = df["Graphics"].apply(graphics_flag)
+if "Graphics" in df.columns:
+    def graphics_flag(x):
+        x = str(x)
+        if "Intel" in x or "UHD" in x:
+            return 0
+        return 1
+    df["Graphics_Flag"] = df["Graphics"].apply(graphics_flag)
+else:
+    df["Graphics_Flag"] = 0
 
 # -----------------------------
 # ML Features
 # -----------------------------
-X = df[["Price", "Ram_GB", "SSD_GB", "Rating", "Graphics_Flag"]]
+feature_cols = ["Price", "Ram_GB", "SSD_GB", "Rating", "Graphics_Flag"]
+# Safety check: only include columns that exist
+feature_cols = [col for col in feature_cols if col in df.columns]
+
+X = df[feature_cols]
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
@@ -106,35 +110,39 @@ graphics = st.sidebar.radio("🎮 Dedicated Graphics?", ["No", "Yes"])
 graphics_input = 1 if graphics == "Yes" else 0
 
 # -----------------------------
-# Recommendation
+# Recommendations
 # -----------------------------
 if st.sidebar.button("🔍 Recommend Laptops"):
-    # Prepare user input
-    user_input = [[budget, ram, ssd, rating, graphics_input]]
+    # Build user input
+    user_input_dict = {
+        "Price": budget,
+        "Ram_GB": ram,
+        "SSD_GB": ssd,
+        "Rating": rating,
+        "Graphics_Flag": graphics_input
+    }
+    # Keep only existing columns
+    user_input = [[user_input_dict[col] for col in feature_cols]]
+
     user_scaled = scaler.transform(user_input)
-    
-    # Get nearest neighbors
     distances, indices = knn.kneighbors(user_scaled)
-    
+
     rec_df = df_display.iloc[indices[0]]
-    
-    # Keep only unique models
     rec_df = rec_df.drop_duplicates(subset="Model").head(5)
-    
+
     st.subheader("✅ Recommended Laptops")
-    
     for _, row in rec_df.iterrows():
         with st.container():
             st.markdown(
                 f"""
                 <div style="border:1px solid #444; padding:15px; border-radius:10px; margin-bottom:15px; background-color:#f9f9f9;">
                     <h3>{row['Model']}</h3>
-                    <p><b>Price:</b> {row['Price']}</p>
-                    <p><b>RAM:</b> {row['Ram']}</p>
-                    <p><b>SSD:</b> {row['SSD']}</p>
-                    <p><b>Graphics:</b> {row['Graphics']}</p>
-                    <p><b>Display:</b> {row['Display']}</p>
-                    <p><b>Rating:</b> ⭐ {row['Rating']}</p>
+                    <p><b>Price:</b> {row.get('Price', 'N/A')}</p>
+                    <p><b>RAM:</b> {row.get('Ram', 'N/A')}</p>
+                    <p><b>SSD:</b> {row.get('SSD', 'N/A')}</p>
+                    <p><b>Graphics:</b> {row.get('Graphics', 'N/A')}</p>
+                    <p><b>Display:</b> {row.get('Display', 'N/A')}</p>
+                    <p><b>Rating:</b> ⭐ {row.get('Rating', 'N/A')}</p>
                 </div>
                 """,
                 unsafe_allow_html=True
