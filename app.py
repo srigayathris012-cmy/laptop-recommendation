@@ -88,15 +88,14 @@ if st.sidebar.button("🔍 Recommend Laptops"):
     rec_df = df_display.iloc[indices[0]].drop_duplicates(subset="Model").head(5)
 
     st.subheader("✅ Recommended Laptops")
-
-    for _, row in rec_df.iterrows():
+for _, row in rec_df.iterrows():
     with st.container():
         st.markdown(
             f"""
             <div style="
                 border:1px solid #555;
                 border-radius:10px;
-                padding:15px;
+                padding:20px;
                 margin-bottom:20px;
                 background-color:#1e1e1e;
                 color:white;
