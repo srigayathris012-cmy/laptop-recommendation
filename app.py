@@ -131,10 +131,11 @@ for _, row in rec_df.iterrows():
                 padding:15px; 
                 border-radius:10px; 
                 margin-bottom:15px; 
-                color:white;               /* black text */
-                box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+                background-color:#2c2c2c;  /* dark card background */
+                color:white;                /* white text for readability */
+                box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
             ">
-                <h3 style="color:black;">{row['Model']}</h3>
+                <h3 style="color:white;">{row['Model']}</h3>
                 <p><b>Price:</b> ₹{row.get('Price', 'N/A')}</p>
                 <p><b>RAM:</b> {row.get('Ram', 'N/A')}</p>
                 <p><b>SSD:</b> {row.get('SSD', 'N/A')}</p>
