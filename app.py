@@ -66,7 +66,7 @@ def parse_ssd(x):
 
 df["SSD_GB"] = df["SSD"].apply(parse_ssd)
 # ----------------- ML FEATURES -----------------
-X = df[["Price", "Ram_GB", "SSD_GB", "Rating", "Graphics_Flag"]]
+X = df[["Price", "Ram_GB", "SSD", "Rating", "Graphics_Flag"]]
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
