@@ -9,6 +9,7 @@ from sklearn.neighbors import NearestNeighbors
 st.set_page_config(page_title="Laptop Recommender", layout="wide")
 st.title("💻 Smart Laptop Recommendation System")
 st.caption("Find the best laptop based on your requirements")
+df.columns = df.columns.str.strip()
 
 # -----------------------------
 # Load Dataset
@@ -71,6 +72,8 @@ df["SSD_GB"] = df["SSD"].apply(parse_ssd)
 # Rating
 df["Rating"] = df["Rating"].fillna(df["Rating"].mean())
 
+if "Graphics" in df.columns:
+    def graphics
 # Graphics flag
 def graphics_flag(x):
     x = str(x)
