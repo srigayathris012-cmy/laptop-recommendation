@@ -16,20 +16,17 @@ st.caption("Get the best laptop based on your requirements")
 @st.cache_data
 def load_data():
     df = pd.read_csv("laptop.csv")
-    # Strip column names to avoid KeyErrors
-    df.columns = df.columns.str.strip()
-    # Drop unnecessary column if exists
+    df.columns = df.columns.str.strip()  # Remove extra spaces
     if "Unnamed: 0" in df.columns:
         df.drop(columns=["Unnamed: 0"], inplace=True)
     return df
 
 df = load_data()
-df_display = df.copy()  # Keep original for display
+df_display = df.copy()  # Original for display
 
 # -----------------------------
 # Clean & Parse Columns
 # -----------------------------
-
 # Price
 df["Price"] = df["Price"].str.replace("₹","").str.replace(",","").astype(int)
 
@@ -70,7 +67,7 @@ df["SSD_GB"] = df["SSD"].apply(parse_ssd)
 if "Rating" in df.columns:
     df["Rating"] = df["Rating"].fillna(df["Rating"].mean())
 else:
-    df["Rating"] = 0  # default if column missing
+    df["Rating"] = 0
 
 # Graphics flag
 if "Graphics" in df.columns:
@@ -87,10 +84,9 @@ else:
 # ML Features
 # -----------------------------
 feature_cols = ["Price", "Ram_GB", "SSD_GB", "Rating", "Graphics_Flag"]
-# Safety check: only include columns that exist
 feature_cols = [col for col in feature_cols if col in df.columns]
-
 X = df[feature_cols]
+
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
@@ -101,7 +97,6 @@ knn.fit(X_scaled)
 # Sidebar Inputs
 # -----------------------------
 st.sidebar.header("🛠 Your Requirements")
-
 budget = st.sidebar.slider("💰 Budget (₹)", 20000, 150000, 60000)
 ram = st.sidebar.selectbox("🧠 RAM (GB)", [4, 8, 16, 32])
 ssd = st.sidebar.selectbox("💾 SSD (GB)", [256, 512, 1024])
@@ -113,7 +108,6 @@ graphics_input = 1 if graphics == "Yes" else 0
 # Recommendations
 # -----------------------------
 if st.sidebar.button("🔍 Recommend Laptops"):
-    # Build user input
     user_input_dict = {
         "Price": budget,
         "Ram_GB": ram,
@@ -121,14 +115,11 @@ if st.sidebar.button("🔍 Recommend Laptops"):
         "Rating": rating,
         "Graphics_Flag": graphics_input
     }
-    # Keep only existing columns
     user_input = [[user_input_dict[col] for col in feature_cols]]
-
     user_scaled = scaler.transform(user_input)
     distances, indices = knn.kneighbors(user_scaled)
 
-    rec_df = df_display.iloc[indices[0]]
-    rec_df = rec_df.drop_duplicates(subset="Model").head(5)
+    rec_df = df_display.iloc[indices[0]].drop_duplicates(subset="Model").head(5)
 
     st.subheader("✅ Recommended Laptops")
     for _, row in rec_df.iterrows():
