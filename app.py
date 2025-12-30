@@ -70,7 +70,7 @@ knn.fit(X_scaled)
 # -----------------------------
 st.sidebar.header("🛠 Your Requirements")
 
-budget = st.sidebar.slider("💰 Budget (₹)", 20000, 150000, 60000)
+budget = st.sidebar.selectbox("💰 Budget (₹)", 20000, 150000, 60000)
 ram = st.sidebar.selectbox("🧠 RAM (GB)", [4, 8, 16, 32])
 ssd = st.sidebar.selectbox("💾 SSD (GB)", [256, 512, 1024])
 rating = st.sidebar.slider("⭐ Minimum Rating", 40, 100, 60)
