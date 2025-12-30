@@ -122,13 +122,21 @@ if st.sidebar.button("🔍 Recommend Laptops"):
     rec_df = df_display.iloc[indices[0]].drop_duplicates(subset="Model").head(5)
 
     st.subheader("✅ Recommended Laptops")
- for _, row in rec_df.iterrows():
+for _, row in rec_df.iterrows():
     with st.container():
         st.markdown(
             f"""
-            <div style="border:1px solid #444; padding:15px; border-radius:10px; margin-bottom:15px; background-color:#f9f9f9; color:black;">
+            <div style="
+                border:1px solid #444; 
+                padding:15px; 
+                border-radius:10px; 
+                margin-bottom:15px; 
+                background-color:#ffffff;  /* white background */
+                color:black;               /* black text */
+                box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+            ">
                 <h3 style="color:black;">{row['Model']}</h3>
-                <p><b>Price:</b> {row.get('Price', 'N/A')}</p>
+                <p><b>Price:</b> ₹{row.get('Price', 'N/A')}</p>
                 <p><b>RAM:</b> {row.get('Ram', 'N/A')}</p>
                 <p><b>SSD:</b> {row.get('SSD', 'N/A')}</p>
                 <p><b>Graphics:</b> {row.get('Graphics', 'N/A')}</p>
@@ -138,3 +146,4 @@ if st.sidebar.button("🔍 Recommend Laptops"):
             """,
             unsafe_allow_html=True
         )
+
