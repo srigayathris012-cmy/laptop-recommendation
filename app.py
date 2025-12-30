@@ -65,7 +65,6 @@ def parse_ssd(x):
         return 0
 
 df["SSD_GB"] = df["SSD"].apply(parse_ssd)
-)
 
 # ----------------- ML FEATURES -----------------
 X = df[["Price", "Ram_GB", "SSD_GB", "Rating", "Graphics_Flag"]]
