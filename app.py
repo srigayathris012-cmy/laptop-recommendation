@@ -90,35 +90,26 @@ if st.sidebar.button("🔍 Recommend Laptops"):
     st.subheader("✅ Recommended Laptops")
 
     for _, row in rec_df.iterrows():
-        with st.container():
-            st.markdown(
-                f"""
-                <div style="
-                    display:flex;
-                    flex-direction:row;
-                    border:1px solid #555;
-                    border-radius:10px;
-                    padding:15px;
-                    margin-bottom:20px;
-                    background-color:#1e1e1e;
-                    color:white;
-                    box-shadow:2px 2px 15px rgba(0,0,0,0.5);
-                ">
-                    <div style="flex:1; text-align:center;">
-                        <img src="{row.get('Image_URL','https://via.placeholder.com/150')}" 
-                             alt="Laptop Image" 
-                             style="max-width:200px; max-height:150px; border-radius:10px;">
-                    </div>
-                    <div style="flex:2; padding-left:15px;">
-                        <h3 style="color:#ffffff;">{row['Model']}</h3>
-                        <p><b>Price:</b> ₹{row.get('Price','N/A')}</p>
-                        <p><b>RAM:</b> {row.get('Ram','N/A')}</p>
-                        <p><b>SSD:</b> {row.get('SSD','N/A')}</p>
-                        <p><b>Graphics:</b> {row.get('Graphics','N/A')}</p>
-                        <p><b>Display:</b> {row.get('Display','N/A')}</p>
-                        <p><b>Rating:</b> ⭐ {row.get('Rating','N/A')}</p>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+    with st.container():
+        st.markdown(
+            f"""
+            <div style="
+                border:1px solid #555;
+                border-radius:10px;
+                padding:15px;
+                margin-bottom:20px;
+                background-color:#1e1e1e;
+                color:white;
+                box-shadow:2px 2px 15px rgba(0,0,0,0.5);
+            ">
+                <h3 style="color:#ffffff;">{row['Model']}</h3>
+                <p><b>Price:</b> ₹{row.get('Price','N/A')}</p>
+                <p><b>RAM:</b> {row.get('Ram','N/A')}</p>
+                <p><b>SSD:</b> {row.get('SSD','N/A')}</p>
+                <p><b>Graphics:</b> {row.get('Graphics','N/A')}</p>
+                <p><b>Display:</b> {row.get('Display','N/A')}</p>
+                <p><b>Rating:</b> ⭐ {row.get('Rating','N/A')}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
