@@ -23,33 +23,49 @@ df["Price"] = df["Price"].str.replace("₹", "").str.replace(",", "").astype(int
 # RAM
 def parse_ram(x):
     try:
+        if pd.isna(x):
+            return 0
         return int(str(x).split()[0])
     except:
         return 0
+
 df["Ram_GB"] = df["Ram"].apply(parse_ram)
+
 
 # SSD
 def parse_ssd(x):
+    """
+    Converts SSD column to GB integer
+    Handles:
+      - '256 GB', '512 GB'
+      - '1 TB' => 1024 GB
+      - 'HDD', 'No SSD', NaN => 0
+      - Multiple values like '256GB/512GB' => take the max
+    """
     try:
-        x = str(x).upper()
-        if "TB" in x:
-            return int(float(x.split()[0]) * 1024)
-        elif "GB" in x:
-            return int(float(x.split()[0]))
-        else:
+        if pd.isna(x):
             return 0
+        x = str(x).upper()
+        # Handle multiple values
+        x_list = x.replace("GB","").replace("TB","").split("/")
+        numbers = []
+        for val in x_list:
+            val = val.strip()
+            if val == "":
+                continue
+            num = float(val)
+            # Convert TB to GB
+            if "TB" in x:
+                num *= 1024
+            numbers.append(num)
+        if len(numbers) == 0:
+            return 0
+        return int(max(numbers))
     except:
         return 0
+
 df["SSD_GB"] = df["SSD"].apply(parse_ssd)
-
-df["Rating"] = df["Rating"].fillna(df["Rating"].mean())
-
-def graphics_flag(x):
-    x = str(x)
-    if "Intel" in x or "UHD" in x:
-        return 0
-    return 1
-df["Graphics_Flag"] = df["Graphics"].apply(graphics_flag)
+)
 
 # ----------------- ML FEATURES -----------------
 X = df[["Price", "Ram_GB", "SSD_GB", "Rating", "Graphics_Flag"]]
