@@ -122,19 +122,19 @@ if st.sidebar.button("🔍 Recommend Laptops"):
     rec_df = df_display.iloc[indices[0]].drop_duplicates(subset="Model").head(5)
 
     st.subheader("✅ Recommended Laptops")
-    for _, row in rec_df.iterrows():
-        with st.container():
-            st.markdown(
-                f"""
-                <div style="border:1px solid #444; padding:15px; border-radius:10px; margin-bottom:15px; background-color:#f9f9f9;">
-                    <h3>{row['Model']}</h3>
-                    <p><b>Price:</b> {row.get('Price', 'N/A')}</p>
-                    <p><b>RAM:</b> {row.get('Ram', 'N/A')}</p>
-                    <p><b>SSD:</b> {row.get('SSD', 'N/A')}</p>
-                    <p><b>Graphics:</b> {row.get('Graphics', 'N/A')}</p>
-                    <p><b>Display:</b> {row.get('Display', 'N/A')}</p>
-                    <p><b>Rating:</b> ⭐ {row.get('Rating', 'N/A')}</p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+ for _, row in rec_df.iterrows():
+    with st.container():
+        st.markdown(
+            f"""
+            <div style="border:1px solid #444; padding:15px; border-radius:10px; margin-bottom:15px; background-color:#f9f9f9; color:black;">
+                <h3 style="color:black;">{row['Model']}</h3>
+                <p><b>Price:</b> {row.get('Price', 'N/A')}</p>
+                <p><b>RAM:</b> {row.get('Ram', 'N/A')}</p>
+                <p><b>SSD:</b> {row.get('SSD', 'N/A')}</p>
+                <p><b>Graphics:</b> {row.get('Graphics', 'N/A')}</p>
+                <p><b>Display:</b> {row.get('Display', 'N/A')}</p>
+                <p><b>Rating:</b> ⭐ {row.get('Rating', 'N/A')}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
