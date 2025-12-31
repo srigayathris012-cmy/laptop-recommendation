@@ -121,7 +121,7 @@ if st.sidebar.button("🔍 Recommend Laptops"):
     rec_df = rec_df.drop_duplicates(subset="Model").head(5)
 
     st.subheader("✅ Recommended Laptops")
-        st.markdown(
+        (
             f"""
             <div style="
                 background-color:#ffffff;
