@@ -96,33 +96,43 @@ graphics_input = 1 if graphics == "Yes" else 0
 # -----------------------------
 # Recommendations
 # -----------------------------
+# -----------------------------
+# Recommendations
+# -----------------------------
 if st.sidebar.button("🔍 Recommend Laptops"):
-    user_input = [[budget, ram, ssd, rating, graphics_input]]
+
+    user_input_dict = {
+        "Price": budget_value,
+        "Ram_GB": ram,
+        "SSD_GB": ssd,
+        "Rating": rating,
+        "Graphics_Flag": graphics_input
+    }
+
+    user_input = [[user_input_dict[col] for col in feature_cols]]
     user_scaled = scaler.transform(user_input)
+
     distances, indices = knn.kneighbors(user_scaled)
 
-    rec_df = df_display.iloc[indices[0]].drop_duplicates(subset="Model").head(5)
+    rec_df = df_display.iloc[indices[0]]
+    rec_df = rec_df.drop_duplicates(subset="Model").head(5)
 
     st.subheader("✅ Recommended Laptops")
-for _, row in rec_df.iterrows():
-    with st.container():
+
+    for _, row in rec_df.iterrows():
         st.markdown(
             f"""
-            <div style="
-                border:1px solid #555;
-                border-radius:10px;
-                padding:20px;
-                margin-bottom:20px;
-                background-color:#1e1e1e;
-                color:white;
-                box-shadow:2px 2px 15px rgba(0,0,0,0.5);
-            ">
-                <h3 style="color:#ffffff;">{row['Model']}</h3>
-                <p><b>Price:</b> ₹{row.get('Price','N/A')}</p>
-                <p><b>RAM:</b> {row.get('Ram','N/A')}</p>
-                <p><b>SSD:</b> {row.get('SSD','N/A')}</p>
+            <div style="background-color:#ffffff;
+                        color:#000000;
+                        padding:15px;
+                        border-radius:10px;
+                        margin-bottom:15px;
+                        border:1px solid #ddd;">
+                <h3>{row['Model']}</h3>
+                <p><b>Price:</b> ₹{row['Price']}</p>
+                <p><b>RAM:</b> {row['Ram']}</p>
+                <p><b>SSD:</b> {row['SSD']}</p>
                 <p><b>Graphics:</b> {row.get('Graphics','N/A')}</p>
-                <p><b>Display:</b> {row.get('Display','N/A')}</p>
                 <p><b>Rating:</b> ⭐ {row.get('Rating','N/A')}</p>
             </div>
             """,
