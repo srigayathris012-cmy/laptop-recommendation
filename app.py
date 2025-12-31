@@ -70,24 +70,29 @@ knn.fit(X_scaled)
 # -----------------------------
 st.sidebar.header("🛠 Your Requirements")
 
-budget = st.sidebar.selectbox(
-    "💰 Budget (₹)",
-    [
-        "Below ₹30,000",
-        "₹30,000 – ₹50,000",
-        "₹50,000 – ₹70,000",
-        "₹70,000 – ₹1,00,000",
-        "Above ₹1,00,000"
-    ]
-)
+budget_options = [
+    "Below ₹30,000",
+    "₹30,000 – ₹50,000",
+    "₹50,000 – ₹70,000",
+    "₹70,000 – ₹1,00,000",
+    "Above ₹1,00,000"
+]
 
-budget_map = {
+budget = st.sidebar.selectbox("💰 Budget (₹)", budget_options, index=2)
+budget_value = {
     "Below ₹30,000": 25000,
     "₹30,000 – ₹50,000": 40000,
     "₹50,000 – ₹70,000": 60000,
     "₹70,000 – ₹1,00,000": 85000,
     "Above ₹1,00,000": 120000
-}
+}[budget]
+
+ram = st.sidebar.selectbox("🧠 RAM (GB)", [4, 8, 16, 32])
+ssd = st.sidebar.selectbox("💾 SSD (GB)", [256, 512, 1024])
+rating = st.sidebar.slider("⭐ Minimum Rating", 0.0, 5.0, 3.5, 0.1)
+graphics = st.sidebar.radio("🎮 Dedicated Graphics?", ["No", "Yes"])
+graphics_input = 1 if graphics == "Yes" else 0
+
 
 budget_value = budget_map[budget]
 
