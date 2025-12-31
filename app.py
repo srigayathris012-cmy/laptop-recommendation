@@ -93,15 +93,6 @@ rating = st.sidebar.selectbox("⭐ Minimum Rating", 0.0, 5.0, 3.5, 0.1)
 graphics = st.sidebar.radio("🎮 Dedicated Graphics?", ["No", "Yes"])
 graphics_input = 1 if graphics == "Yes" else 0
 
-
-budget_value = budget_map[budget]
-
-ram = st.sidebar.selectbox("🧠 RAM (GB)", [4, 8, 16, 32])
-ssd = st.sidebar.selectbox("💾 SSD (GB)", [256, 512, 1024])
-rating = st.sidebar.slider("⭐ Minimum Rating", 0.0, 5.0, 3.5, 0.1)
-graphics = st.sidebar.radio("🎮 Dedicated Graphics?", ["No", "Yes"])
-graphics_input = 1 if graphics == "Yes" else 0
-
 # -----------------------------
 # Recommendations
 # -----------------------------
