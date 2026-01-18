@@ -6,6 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 import urllib.parse
 import os
 import google.generativeai as genai
+from PIL import Image
 
 # ================= PAGE CONFIG =================
 st.set_page_config(page_title="Laptop Finder AI", layout="wide")
@@ -14,7 +15,6 @@ st.set_page_config(page_title="Laptop Finder AI", layout="wide")
 @st.cache_data
 def load_data():
     df = pd.read_csv("laptop.csv")
-
     if "Unnamed: 0" in df.columns:
         df.drop(columns=["Unnamed: 0"], inplace=True)
 
@@ -37,7 +37,6 @@ def load_data():
 
     df["Graphics_Flag"] = df["Graphics"].apply(gpu_flag)
     df["Rating"] = df["Rating"].fillna(df["Rating"].mean())
-
     return df
 
 df = load_data()
@@ -46,13 +45,11 @@ df = load_data()
 X = df[["Price", "Ram_GB", "SSD_GB", "Rating", "Graphics_Flag"]]
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
-
 knn = NearestNeighbors(n_neighbors=5)
 knn.fit(X_scaled)
 
 # ================= GEMINI AI SETUP =================
 genai.configure(api_key=os.getenv("AIzaSyAswyTKSinwbffaYQM3YE9VeBOdcSK0iRo"))
-
 try:
     gemini_model = genai.GenerativeModel("gemini-pro")
     GEMINI_AVAILABLE = True
@@ -62,61 +59,67 @@ except:
 # ================= AI ANSWER FUNCTION =================
 def ai_answer(question):
     q = question.lower()
-
-    # ---- Dataset-based answers (FAST & FREE) ----
+    # Dataset-based answers (fast fallback)
     if "under" in q and "k" in q:
         try:
             budget = int("".join(filter(str.isdigit, q))) * 1000
-            results = df[df["Price"] <= budget] \
-                .sort_values(["Rating", "Price"], ascending=[False, True]) \
-                .head(3)
-
+            results = df[df["Price"] <= budget].sort_values(["Rating", "Price"], ascending=[False, True]).head(3)
             if results.empty:
                 return f"No laptops found under ₹{budget}"
-
             text = f"💻 Best laptops under ₹{budget}:\n"
             for _, r in results.iterrows():
                 text += f"- {r['Model']} (₹{r['Price']}, ⭐ {r['Rating']})\n"
             return text
         except:
             pass
-
     if "gaming" in q:
-        best = df[df["Graphics_Flag"] == 1] \
-            .sort_values(["Rating", "Price"], ascending=[False, True]) \
-            .iloc[0]
+        best = df[df["Graphics_Flag"] == 1].sort_values(["Rating","Price"], ascending=[False,True]).iloc[0]
         return f"🎮 Best gaming laptop: {best['Model']} | ₹{best['Price']} | ⭐ {best['Rating']}"
-
     if "student" in q:
-        best = df[df["Price"] <= 60000] \
-            .sort_values(["Rating", "Price"], ascending=[False, True]) \
-            .iloc[0]
+        best = df[df["Price"] <= 60000].sort_values(["Rating","Price"], ascending=[False,True]).iloc[0]
         return f"📚 Best student laptop: {best['Model']} | ₹{best['Price']}"
 
-    # ---- Gemini AI (ANY question) ----
+    # Gemini AI answers for anything else
     if GEMINI_AVAILABLE:
         try:
             response = gemini_model.generate_content(
                 f"""
-                You are an AI assistant for a Laptop Recommendation System.
-                Answer clearly, simply, and in a student-friendly way.
+                You are a Laptop Recommendation AI.
+                Answer simply and clearly.
 
                 Question: {question}
                 """
             )
             return response.text
         except:
-            return "❌ Gemini error. Please try again."
+            return "❌ Gemini AI error. Please try again."
 
-    return "⚠️ AI not available. Please check API key."
+    return "⚠️ AI not available. Please check GEMINI_API_KEY."
 
-# ================= SIDEBAR AI TOOL =================
-st.sidebar.title("🤖 AI Assistant")
-user_question = st.sidebar.text_input("Ask me anything:")
+# ================= GEMINI CHAT UI =================
+st.sidebar.title("🤖 Ask Gemini")
+try:
+    gemini_logo = Image.open("gemini_logo.png")  # Add your Gemini logo in project folder
+    st.sidebar.image(gemini_logo, width=80)
+except:
+    pass
 
-if user_question:
-    st.sidebar.markdown("**Answer:**")
-    st.sidebar.info(ai_answer(user_question))
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+user_input = st.sidebar.text_input("Ask Gemini:", key="input")
+
+if user_input:
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    reply = ai_answer(user_input)
+    st.session_state.messages.append({"role": "assistant", "content": reply})
+
+# Display chat history
+for msg in st.session_state.messages:
+    if msg["role"] == "user":
+        st.sidebar.chat_message("user").markdown(msg["content"])
+    else:
+        st.sidebar.chat_message("assistant").markdown(msg["content"])
 
 # ================= MAIN UI =================
 st.title("💻 Laptop Finder AI")
@@ -133,22 +136,18 @@ tabs = st.tabs([
 # ================= TAB 1: RECOMMEND =================
 with tabs[0]:
     col1, col2 = st.columns(2)
-
     with col1:
         budget = st.slider("Budget (₹)", 20000, 200000, 60000, step=5000)
         ram = st.selectbox("RAM (GB)", [4, 8, 16, 32])
         ssd = st.selectbox("SSD (GB)", [256, 512, 1024])
-
     with col2:
         rating = st.slider("Minimum Rating", 0.0, 5.0, 3.0, step=0.1)
         graphics = st.radio("Graphics", ["Integrated", "Dedicated"])
-
     if st.button("Find Best Laptops"):
-        g_flag = 0 if graphics == "Integrated" else 1
+        g_flag = 0 if graphics=="Integrated" else 1
         user_input = scaler.transform([[budget, ram, ssd, rating, g_flag]])
         dist, idxs = knn.kneighbors(user_input)
-
-        for i, idx in enumerate(idxs[0], 1):
+        for i, idx in enumerate(idxs[0],1):
             row = df.iloc[idx]
             link = "https://www.amazon.in/s?k=" + urllib.parse.quote(row["Model"])
             st.markdown(f"""
@@ -177,15 +176,13 @@ with tabs[2]:
         (30000, 80000),
         step=5000
     )
-
     filtered = df[(df["Price"] >= min_p) & (df["Price"] <= max_p)]
     st.dataframe(filtered.sort_values("Rating", ascending=False).head(20))
 
 # ================= TAB 4: SMART INSIGHTS =================
 with tabs[3]:
     laptop_name = st.selectbox("Select a Laptop", df["Model"].unique())
-    row = df[df["Model"] == laptop_name].iloc[0]
-
+    row = df[df["Model"]==laptop_name].iloc[0]
     st.subheader("Why this laptop?")
     st.write(f"💰 Price: ₹{row['Price']}")
     st.write(f"💾 RAM: {row['Ram']}")
@@ -194,6 +191,6 @@ with tabs[3]:
 
 # ================= TAB 5: TRENDING =================
 with tabs[4]:
-    df["Trending_Score"] = (df["Rating"] * 20) + (df["Ram_GB"] * 5) + (df["SSD_GB"] / 10)
+    df["Trending_Score"] = (df["Rating"]*20) + (df["Ram_GB"]*5) + (df["SSD_GB"]/10)
     trending = df.sort_values("Trending_Score", ascending=False).head(10)
-    st.dataframe(trending[["Model", "Price", "Rating"]])
+    st.dataframe(trending[["Model","Price","Rating"]])
