@@ -4,44 +4,20 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import NearestNeighbors
 import urllib.parse
-from openai import OpenAI
-import os
 
-# ================= CONFIG =================
 st.set_page_config(page_title="Laptop Finder AI", layout="wide")
-
-# ================= OPENAI API =================
-# Try reading API key from environment variable first
-OPENAI_KEY = os.getenv("OPENAI_API_KEY")
-
-# Fallback: set your key directly (for testing only!)
-if not OPENAI_KEY:
-    OPENAI_KEY = "sk-XXXX-your-api-key-XXXX"  # <-- replace with your key
-
-client = OpenAI(api_key=OPENAI_KEY)
-
-def ai_answer_api(question):
-    try:
-        prompt = f"You are a laptop expert. Answer the user's question in simple, clear, and concise way. Question: {question}"
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role":"user","content":prompt}],
-            max_tokens=200
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"Error: {e}"
 
 # ================= LOAD & CLEAN DATA =================
 @st.cache_data
 def load_data():
     df = pd.read_csv("laptop.csv")
+
     if "Unnamed: 0" in df.columns:
         df.drop(columns=["Unnamed: 0"], inplace=True)
 
     def clean_price(x):
         try:
-            return int(str(x).replace("₹","").replace(",","").strip())
+            return int(str(x).replace("₹", "").replace(",", "").strip())
         except:
             return np.nan
 
@@ -67,6 +43,7 @@ df = load_data()
 X = df[["Price", "Ram_GB", "SSD_GB", "Rating", "Graphics_Flag"]]
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
+
 knn = NearestNeighbors(n_neighbors=5)
 knn.fit(X_scaled)
 
@@ -74,10 +51,41 @@ knn.fit(X_scaled)
 st.sidebar.title("🤖 AI Assistant")
 user_question = st.sidebar.text_input("Ask me about laptops:")
 
+def ai_answer(question):
+    q = str(question).lower()
+    response = "Sorry, I cannot answer that."
+
+    if "gaming" in q:
+        best = df[df["Graphics_Flag"] == 1].sort_values(["Rating","Price"], ascending=[False,True]).iloc[0]
+        response = f"🎮 Best gaming laptop: {best['Model']} with {best['Ram']} RAM, {best['SSD']} SSD, Rating {best['Rating']}"
+    elif "student" in q:
+        best = df[(df["Price"] <= 60000) & (df["Rating"] >= 3)].sort_values(["Rating","Price"], ascending=[False,True]).iloc[0]
+        response = f"📚 Best student laptop: {best['Model']} with {best['Ram']} RAM, {best['SSD']} SSD, Price ₹{best['Price']}"
+    elif "value" in q:
+        df["Value_Score"] = (df["Ram_GB"]*2 + df["SSD_GB"]/256 + df["Rating"]*5)/df["Price"]
+        best = df.sort_values("Value_Score", ascending=False).iloc[0]
+        response = f"💰 Best value for money: {best['Model']} Value Score: {best['Value_Score']:.2f}"
+    elif "longevity" in q or "future" in q:
+        scores = []
+        for _, r in df.iterrows():
+            score = 0
+            score += 40 if r["Ram_GB"] >=16 else 20
+            score += 30 if r["SSD_GB"]>=512 else 15
+            score += 20 if r["Graphics_Flag"]==1 else 10
+            scores.append(score)
+        df["Longevity_Score"] = scores
+        best = df.sort_values("Longevity_Score", ascending=False).iloc[0]
+        response = f"🧓 Most future-proof laptop: {best['Model']} Longevity Score: {best['Longevity_Score']}"
+    elif any(l.lower() in q for l in df["Model"].tolist()):
+        model = [l for l in df["Model"].tolist() if l.lower() in q][0]
+        r = df[df["Model"]==model].iloc[0]
+        response = f"💡 {r['Model']} recommended because Price ₹{r['Price']}, RAM {r['Ram']}, SSD {r['SSD']}, Rating {r['Rating']}, Graphics {r['Graphics']}"
+
+    return response
+
 if user_question:
-    answer = ai_answer_api(user_question)
     st.sidebar.markdown("**Answer:**")
-    st.sidebar.info(answer)
+    st.sidebar.info(ai_answer(user_question))
 
 # ================= UI =================
 st.title("💻 Laptop Finder AI")
@@ -93,6 +101,7 @@ tabs = st.tabs([
 
 # =====================================================
 # TAB 1: RECOMMEND
+# =====================================================
 with tabs[0]:
     col1, col2 = st.columns(2)
     with col1:
@@ -120,6 +129,7 @@ with tabs[0]:
 
 # =====================================================
 # TAB 2: SEARCH
+# =====================================================
 with tabs[1]:
     query = st.text_input("Search Laptop (Brand / Model)")
     if query:
@@ -135,6 +145,7 @@ with tabs[1]:
 
 # =====================================================
 # TAB 3: PRICE FILTER
+# =====================================================
 with tabs[2]:
     min_p, max_p = st.slider(
         "Select Price Range (₹)",
@@ -153,6 +164,7 @@ with tabs[2]:
 
 # =====================================================
 # TAB 4: SMART LAPTOP INSIGHTS
+# =====================================================
 with tabs[3]:
     laptop_name = st.selectbox("Select a Laptop", df["Model"].unique())
     row = df[df["Model"]==laptop_name].iloc[0]
@@ -193,6 +205,7 @@ with tabs[3]:
 
 # =====================================================
 # TAB 5: TRENDING / POPULAR LAPTOPS
+# =====================================================
 with tabs[4]:
     df["Trending_Score"] = ((df["Rating"]/5)*50 +
                             ((df["Ram_GB"]*2 + df["SSD_GB"]/256 + df["Rating"]*5)/df["Price"]*30) +
