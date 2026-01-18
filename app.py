@@ -7,10 +7,11 @@ import urllib.parse
 
 st.set_page_config(page_title="Laptop Finder AI", layout="wide")
 
-# ---------------- LOAD DATA ----------------
+# ================= LOAD & CLEAN DATA =================
 @st.cache_data
 def load_data():
     df = pd.read_csv("laptop.csv")
+
     if "Unnamed: 0" in df.columns:
         df.drop(columns=["Unnamed: 0"], inplace=True)
 
@@ -38,7 +39,7 @@ def load_data():
 
 df = load_data()
 
-# ---------------- ML MODEL ----------------
+# ================= ML MODEL =================
 X = df[["Price", "Ram_GB", "SSD_GB", "Rating", "Graphics_Flag"]]
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
@@ -46,11 +47,16 @@ X_scaled = scaler.fit_transform(X)
 knn = NearestNeighbors(n_neighbors=5)
 knn.fit(X_scaled)
 
-# ---------------- UI ----------------
+# ================= UI =================
 st.title("💻 Laptop Finder AI")
 st.caption("Smart Laptop Recommendation System with Explainable AI")
 
-tabs = st.tabs(["🔍 Recommend", "🔎 Search", "💰 Price Filter", "💡 Use-Case Advisor"])
+tabs = st.tabs([
+    "🔍 Recommend",
+    "🔎 Search",
+    "💰 Price Filter",
+    "🧠 Smart Laptop Insights"
+])
 
 # =====================================================
 # TAB 1: RECOMMEND
@@ -59,7 +65,6 @@ with tabs[0]:
     col1, col2 = st.columns(2)
 
     with col1:
-        user_type = st.selectbox("User Type", ["Student", "Office", "Gamer"])
         budget = st.slider("Budget (₹)", 20000, 200000, 60000, step=5000)
         ram = st.selectbox("RAM (GB)", [4, 8, 16, 32])
         ssd = st.selectbox("SSD (GB)", [256, 512, 1024])
@@ -73,7 +78,6 @@ with tabs[0]:
         user_input = scaler.transform([[budget, ram, ssd, rating, g_flag]])
         dist, idxs = knn.kneighbors(user_input)
 
-        st.subheader("🎯 Recommended Laptops")
         for i, idx in enumerate(idxs[0], 1):
             row = df.iloc[idx]
             score = max(0, 100 - dist[0][i-1] * 10)
@@ -83,7 +87,7 @@ with tabs[0]:
             **{i}. {row['Model']}**  
             💰 ₹{row['Price']} | 💾 {row['Ram']} | 💿 {row['SSD']}  
             🎮 {row['Graphics']} | ⭐ {row['Rating']}  
-            🔍 *Explainable AI:* Similar price, RAM, storage & graphics preference  
+            🔍 Match Score: {score:.1f}%  
             🛒 [Buy on Amazon]({link})
             """)
 
@@ -91,20 +95,17 @@ with tabs[0]:
 # TAB 2: SEARCH
 # =====================================================
 with tabs[1]:
-    query = st.text_input("Search by Brand / Model")
-
+    query = st.text_input("Search Laptop (Brand / Model)")
     if query:
-        result = df[df["Model"].str.contains(query, case=False, na=False)]
+        results = df[df["Model"].str.contains(query, case=False, na=False)]
 
-        if result.empty:
+        if results.empty:
             st.warning("No laptops found.")
         else:
-            for _, row in result.head(10).iterrows():
-                link = "https://www.amazon.in/s?k=" + urllib.parse.quote(row["Model"])
+            for _, row in results.head(10).iterrows():
                 st.markdown(f"""
                 **{row['Model']}**  
-                💰 ₹{row['Price']} | 💾 {row['Ram']} | 💿 {row['SSD']}  
-                🛒 [Amazon]({link})
+                💰 ₹{row['Price']} | 💾 {row['Ram']} | 💿 {row['SSD']}
                 """)
 
 # =====================================================
@@ -122,8 +123,6 @@ with tabs[2]:
     filtered = df[(df["Price"] >= min_p) & (df["Price"] <= max_p)]
     filtered = filtered.sort_values(["Rating", "Price"], ascending=[False, True]).head(20)
 
-    st.subheader(f"💰 Laptops between ₹{min_p} – ₹{max_p}")
-
     for _, row in filtered.iterrows():
         st.markdown(f"""
         **{row['Model']}**  
@@ -131,31 +130,54 @@ with tabs[2]:
         """)
 
 # =====================================================
-# TAB 4: USE-CASE ADVISOR (EXPLAINABLE AI)
+# TAB 4: SMART LAPTOP INSIGHTS (ALL FEATURES COMBINED)
 # =====================================================
 with tabs[3]:
-    use_case = st.selectbox(
-        "Select Your Use Case",
-        ["Gaming", "Programming", "Video Editing", "Office / Students"]
-    )
+    laptop_name = st.selectbox("Select a Laptop", df["Model"].unique())
+    row = df[df["Model"] == laptop_name].iloc[0]
 
-    if use_case == "Gaming":
-        data = df[(df["Graphics_Flag"] == 1) & (df["Ram_GB"] >= 16)]
-        reason = "Dedicated GPU + High RAM"
-    elif use_case == "Programming":
-        data = df[(df["Ram_GB"] >= 8) & (df["SSD_GB"] >= 256)]
-        reason = "Fast SSD + sufficient RAM"
-    elif use_case == "Video Editing":
-        data = df[(df["Graphics_Flag"] == 1) & (df["SSD_GB"] >= 512)]
-        reason = "GPU + Large SSD"
-    else:
-        data = df[df["Rating"] >= 3.5]
-        reason = "Good rating & balanced specs"
+    st.subheader("🔍 Explainable AI – Why This Laptop?")
 
-    st.subheader("💡 Recommended for your use case")
-    for _, row in data.sort_values("Rating", ascending=False).head(5).iterrows():
-        st.markdown(f"""
-        **{row['Model']}**  
-        ⭐ {row['Rating']} | 💰 ₹{row['Price']}  
-        🔍 *Explainable AI:* {reason}
-        """)
+    budget_score = min(100, (1 - row["Price"] / df["Price"].max()) * 100)
+    ram_score = min(100, (row["Ram_GB"] / 32) * 100)
+    ssd_score = min(100, (row["SSD_GB"] / 1024) * 100)
+    rating_score = (row["Rating"] / 5) * 100
+
+    overall_score = (budget_score + ram_score + ssd_score + rating_score) / 4
+
+    st.write(f"💡 **Overall Confidence Score:** {overall_score:.1f}%")
+
+    st.markdown("""
+    **Contribution Breakdown**
+    - Budget Match
+    - RAM Strength
+    - Storage Capacity
+    - User Rating
+    """)
+
+    st.subheader("💸 Value for Money")
+    value_score = (row["Ram_GB"] * 2 + row["SSD_GB"] / 256 + row["Rating"] * 5) / row["Price"]
+    st.write(f"💰 **Value Score:** {value_score:.2f}")
+
+    st.subheader("🧓 Longevity / Future-Proof Score")
+    longevity = 0
+    longevity += 40 if row["Ram_GB"] >= 16 else 20
+    longevity += 30 if row["SSD_GB"] >= 512 else 15
+    longevity += 20 if row["Graphics_Flag"] == 1 else 10
+    longevity += 10 if row["Rating"] >= 4 else 5
+
+    st.write(f"⏳ **Future-Proof Score:** {longevity}/100")
+
+    st.subheader("🎯 Usage Fit Score")
+    st.write(f"🎮 Gaming Fit: {85 if row['Graphics_Flag']==1 else 60}%")
+    st.write(f"💻 Programming Fit: {90 if row['Ram_GB']>=8 else 65}%")
+    st.write(f"🎬 Editing Fit: {88 if row['SSD_GB']>=512 else 60}%")
+    st.write(f"📄 Office Fit: 92%")
+
+    st.subheader("💡 Upgrade Advice")
+    if row["Ram_GB"] < 16:
+        st.warning("Upgrade RAM to 16GB for better future performance.")
+    if row["SSD_GB"] < 512:
+        st.warning("Upgrade SSD to 512GB for faster speed.")
+    if row["Graphics_Flag"] == 0:
+        st.info("Not suitable for heavy gaming or video editing.")
