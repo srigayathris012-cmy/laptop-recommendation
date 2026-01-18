@@ -6,11 +6,8 @@ import os
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import NearestNeighbors
-from openai import OpenAI
-
-# ================= OPENAI CLIENT =================
-client = OpenAI(api_key=os.getenv("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"))
-
+import openai
+openai.api_key = os.getenv("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")
 st.set_page_config(page_title="Laptop Finder AI", layout="wide")
 
 # ================= LOAD & CLEAN DATA =================
@@ -56,26 +53,27 @@ knn.fit(X_scaled)
 # ================= AI ANSWER FUNCTION =================
 def ai_answer(question):
     try:
-        context = """
-        You are an expert laptop recommendation AI.
-        Answer clearly, simply, and helpfully.
-        If the question is not about laptops, still answer politely.
-        """
-
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": context},
-                {"role": "user", "content": question}
+                {
+                    "role": "system",
+                    "content": "You are a helpful AI assistant. Answer clearly and politely."
+                },
+                {
+                    "role": "user",
+                    "content": question
+                }
             ],
             temperature=0.6,
             max_tokens=300
         )
 
-        return response.choices[0].message.content
+        return response.choices[0].message["content"]
 
     except Exception as e:
         return "❌ AI not available. Please check API key or internet."
+
 
 # ================= SIDEBAR AI =================
 st.sidebar.title("🤖 AI Assistant")
