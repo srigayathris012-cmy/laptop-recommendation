@@ -7,7 +7,7 @@ import os
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import NearestNeighbors
 import openai
-openai.api_key = os.getenv("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")
+openai.api_key = os.getenv("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")
 st.set_page_config(page_title="Laptop Finder AI", layout="wide")
 
 # ================= LOAD & CLEAN DATA =================
