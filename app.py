@@ -1,13 +1,10 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import urllib.parse
-import os
-
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import NearestNeighbors
-import openai
-openai.api_key = os.getenv("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")
+import urllib.parse
+
 st.set_page_config(page_title="Laptop Finder AI", layout="wide")
 
 # ================= LOAD & CLEAN DATA =================
@@ -50,123 +47,177 @@ X_scaled = scaler.fit_transform(X)
 knn = NearestNeighbors(n_neighbors=5)
 knn.fit(X_scaled)
 
-# ================= AI ANSWER FUNCTION =================
-def ai_answer(question):
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful AI assistant. Answer clearly and politely."
-                },
-                {
-                    "role": "user",
-                    "content": question
-                }
-            ],
-            temperature=0.6,
-            max_tokens=300
-        )
-
-        return response.choices[0].message["content"]
-
-    except Exception as e:
-        return "❌ AI not available. Please check API key or internet."
-
-
-# ================= SIDEBAR AI =================
+# ================= SIDEBAR AI TOOL =================
 st.sidebar.title("🤖 AI Assistant")
-user_question = st.sidebar.text_input("Ask anything")
+user_question = st.sidebar.text_input("Ask me about laptops:")
+
+def ai_answer(question):
+    q = str(question).lower()
+    response = "Sorry, I cannot answer that."
+
+    if "gaming" in q:
+        best = df[df["Graphics_Flag"] == 1].sort_values(["Rating","Price"], ascending=[False,True]).iloc[0]
+        response = f"🎮 Best gaming laptop: {best['Model']} with {best['Ram']} RAM, {best['SSD']} SSD, Rating {best['Rating']}"
+    elif "student" in q:
+        best = df[(df["Price"] <= 60000) & (df["Rating"] >= 3)].sort_values(["Rating","Price"], ascending=[False,True]).iloc[0]
+        response = f"📚 Best student laptop: {best['Model']} with {best['Ram']} RAM, {best['SSD']} SSD, Price ₹{best['Price']}"
+    elif "value" in q:
+        df["Value_Score"] = (df["Ram_GB"]*2 + df["SSD_GB"]/256 + df["Rating"]*5)/df["Price"]
+        best = df.sort_values("Value_Score", ascending=False).iloc[0]
+        response = f"💰 Best value for money: {best['Model']} Value Score: {best['Value_Score']:.2f}"
+    elif "longevity" in q or "future" in q:
+        scores = []
+        for _, r in df.iterrows():
+            score = 0
+            score += 40 if r["Ram_GB"] >=16 else 20
+            score += 30 if r["SSD_GB"]>=512 else 15
+            score += 20 if r["Graphics_Flag"]==1 else 10
+            scores.append(score)
+        df["Longevity_Score"] = scores
+        best = df.sort_values("Longevity_Score", ascending=False).iloc[0]
+        response = f"🧓 Most future-proof laptop: {best['Model']} Longevity Score: {best['Longevity_Score']}"
+    elif any(l.lower() in q for l in df["Model"].tolist()):
+        model = [l for l in df["Model"].tolist() if l.lower() in q][0]
+        r = df[df["Model"]==model].iloc[0]
+        response = f"💡 {r['Model']} recommended because Price ₹{r['Price']}, RAM {r['Ram']}, SSD {r['SSD']}, Rating {r['Rating']}, Graphics {r['Graphics']}"
+
+    return response
 
 if user_question:
     st.sidebar.markdown("**Answer:**")
-    st.sidebar.success(ai_answer(user_question))
+    st.sidebar.info(ai_answer(user_question))
 
 # ================= UI =================
 st.title("💻 Laptop Finder AI")
-st.caption("Laptop Recommendation System using ML + Generative AI")
+st.caption("Smart Laptop Recommendation System with Explainable AI")
 
 tabs = st.tabs([
     "🔍 Recommend",
     "🔎 Search",
     "💰 Price Filter",
-    "🧠 Smart Insights",
-    "📈 Trending"
+    "🧠 Smart Laptop Insights",
+    "📈 Trending Laptops"
 ])
 
-# ================= TAB 1: RECOMMEND =================
+# =====================================================
+# TAB 1: RECOMMEND
+# =====================================================
 with tabs[0]:
     col1, col2 = st.columns(2)
-
     with col1:
         budget = st.slider("Budget (₹)", 20000, 200000, 60000, step=5000)
         ram = st.selectbox("RAM (GB)", [4, 8, 16, 32])
         ssd = st.selectbox("SSD (GB)", [256, 512, 1024])
-
     with col2:
         rating = st.slider("Minimum Rating", 0.0, 5.0, 3.0, step=0.1)
         graphics = st.radio("Graphics", ["Integrated", "Dedicated"])
-
     if st.button("Find Best Laptops"):
-        g_flag = 0 if graphics == "Integrated" else 1
+        g_flag = 0 if graphics=="Integrated" else 1
         user_input = scaler.transform([[budget, ram, ssd, rating, g_flag]])
         dist, idxs = knn.kneighbors(user_input)
-
-        for i, idx in enumerate(idxs[0], 1):
+        for i, idx in enumerate(idxs[0],1):
             row = df.iloc[idx]
+            score = max(0, 100 - dist[0][i-1]*10)
             link = "https://www.amazon.in/s?k=" + urllib.parse.quote(row["Model"])
             st.markdown(f"""
             **{i}. {row['Model']}**  
             💰 ₹{row['Price']} | 💾 {row['Ram']} | 💿 {row['SSD']}  
-            ⭐ {row['Rating']} | 🎮 {row['Graphics']}  
+            🎮 {row['Graphics']} | ⭐ {row['Rating']}  
+            🔍 Match Score: {score:.1f}%  
             🛒 [Buy on Amazon]({link})
             """)
 
-# ================= TAB 2: SEARCH =================
+# =====================================================
+# TAB 2: SEARCH
+# =====================================================
 with tabs[1]:
-    query = st.text_input("Search by Brand or Model")
+    query = st.text_input("Search Laptop (Brand / Model)")
     if query:
         results = df[df["Model"].str.contains(query, case=False, na=False)]
         if results.empty:
-            st.warning("No laptops found")
+            st.warning("No laptops found.")
         else:
             for _, row in results.head(10).iterrows():
-                st.write(f"**{row['Model']}** | ₹{row['Price']} | ⭐ {row['Rating']}")
+                st.markdown(f"""
+                **{row['Model']}**  
+                💰 ₹{row['Price']} | 💾 {row['Ram']} | 💿 {row['SSD']} | ⭐ {row['Rating']}
+                """)
 
-# ================= TAB 3: PRICE FILTER =================
+# =====================================================
+# TAB 3: PRICE FILTER
+# =====================================================
 with tabs[2]:
     min_p, max_p = st.slider(
-        "Select Price Range",
-        int(df.Price.min()),
-        int(df.Price.max()),
+        "Select Price Range (₹)",
+        int(df["Price"].min()),
+        int(df["Price"].max()),
         (30000, 80000),
         step=5000
     )
+    filtered = df[(df["Price"]>=min_p)&(df["Price"]<=max_p)]
+    filtered = filtered.sort_values(["Rating","Price"], ascending=[False,True]).head(20)
+    for _, row in filtered.iterrows():
+        st.markdown(f"""
+        **{row['Model']}**  
+        💰 ₹{row['Price']} | ⭐ {row['Rating']} | 💾 {row['Ram']}
+        """)
 
-    filtered = df[(df.Price >= min_p) & (df.Price <= max_p)]
-    for _, row in filtered.head(15).iterrows():
-        st.write(f"**{row['Model']}** | ₹{row['Price']} | ⭐ {row['Rating']}")
-
-# ================= TAB 4: SMART INSIGHTS =================
+# =====================================================
+# TAB 4: SMART LAPTOP INSIGHTS
+# =====================================================
 with tabs[3]:
-    laptop = st.selectbox("Select Laptop", df["Model"].unique())
-    row = df[df["Model"] == laptop].iloc[0]
+    laptop_name = st.selectbox("Select a Laptop", df["Model"].unique())
+    row = df[df["Model"]==laptop_name].iloc[0]
 
-    st.metric("Price", f"₹{row['Price']}")
-    st.metric("Rating", row["Rating"])
-    st.metric("RAM", row["Ram"])
-    st.metric("SSD", row["SSD"])
+    st.subheader("🔍 Explainable AI – Why This Laptop?")
+    budget_score = min(100,(1 - row["Price"]/df["Price"].max())*100)
+    ram_score = min(100,(row["Ram_GB"]/32)*100)
+    ssd_score = min(100,(row["SSD_GB"]/1024)*100)
+    rating_score = (row["Rating"]/5)*100
+    overall_score = (budget_score + ram_score + ssd_score + rating_score)/4
+    st.write(f"💡 **Overall Confidence Score:** {overall_score:.1f}%")
 
-# ================= TAB 5: TRENDING =================
+    st.subheader("💸 Value for Money")
+    value_score = (row["Ram_GB"]*2 + row["SSD_GB"]/256 + row["Rating"]*5)/row["Price"]
+    st.write(f"💰 **Value Score:** {value_score:.2f}")
+
+    st.subheader("🧓 Longevity / Future-Proof Score")
+    longevity = 0
+    longevity += 40 if row["Ram_GB"]>=16 else 20
+    longevity += 30 if row["SSD_GB"]>=512 else 15
+    longevity += 20 if row["Graphics_Flag"]==1 else 10
+    longevity += 10 if row["Rating"]>=4 else 5
+    st.write(f"⏳ **Future-Proof Score:** {longevity}/100")
+
+    st.subheader("🎯 Usage Fit Score")
+    st.write(f"🎮 Gaming Fit: {85 if row['Graphics_Flag']==1 else 60}%")
+    st.write(f"💻 Programming Fit: {90 if row['Ram_GB']>=8 else 65}%")
+    st.write(f"🎬 Editing Fit: {88 if row['SSD_GB']>=512 else 60}%")
+    st.write(f"📄 Office Fit: 92%")
+
+    st.subheader("💡 Upgrade Advice")
+    if row["Ram_GB"]<16:
+        st.warning("Upgrade RAM to 16GB for better performance.")
+    if row["SSD_GB"]<512:
+        st.warning("Upgrade SSD to 512GB for faster speed.")
+    if row["Graphics_Flag"]==0:
+        st.info("Not suitable for heavy gaming or video editing.")
+
+# =====================================================
+# TAB 5: TRENDING / POPULAR LAPTOPS
+# =====================================================
 with tabs[4]:
-    df["Trending_Score"] = (
-        (df["Rating"] * 20) +
-        (df["Ram_GB"] * 2) +
-        (df["SSD_GB"] / 256 * 10)
-    )
-
+    df["Trending_Score"] = ((df["Rating"]/5)*50 +
+                            ((df["Ram_GB"]*2 + df["SSD_GB"]/256 + df["Rating"]*5)/df["Price"]*30) +
+                            ((df["Ram_GB"]>=16)*40 + (df["SSD_GB"]>=512)*30 + (df["Graphics_Flag"]==1)*20))
     trending = df.sort_values("Trending_Score", ascending=False).head(10)
-
+    st.subheader("📈 Top 10 Trending Laptops")
     for _, row in trending.iterrows():
-        st.write(f"🔥 **{row['Model']}** | ₹{row['Price']} | ⭐ {row['Rating']}")
+        link = "https://www.amazon.in/s?k=" + urllib.parse.quote(row["Model"])
+        st.markdown(f"""
+        **{row['Model']}**  
+        💰 ₹{row['Price']} | 💾 {row['Ram']} | 💿 {row['SSD']}  
+        🎮 {row['Graphics']} | ⭐ {row['Rating']}  
+        🔥 Trending Score: {row['Trending_Score']:.1f}  
+        🛒 [Buy on Amazon]({link})
+        """)
