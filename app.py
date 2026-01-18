@@ -194,11 +194,7 @@ with gr.Tab("💰 Price Filter"):
 
         
         # --- Laptop Use Case Advisor Tab ---
-        with gr.Tab("💡 Laptop Use Case Advisor"):
-            use_case_dropdown = gr.Dropdown(["Gaming","Programming / Development","Video Editing / Graphics","Office / Students"],value="Office / Students",label="Select Use Case")
-            use_case_btn = gr.Button("Show Laptops")
-            use_case_output = gr.Markdown()
-            use_case_btn.click(laptop_use_case,use_case_dropdown,use_case_output)
+  )
 
 # ---------------- LAUNCH ----------------
 app.launch()
