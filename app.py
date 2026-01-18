@@ -166,16 +166,22 @@ with gr.Blocks(title="Laptop Finder AI") as app:
         
         # --- Price Filter Tab ---
         with gr.Tab("💰 Price Filter"):
-            min_price_slider = gr.Slider(minimum=int(df_display["Price"].min()),
-                                         maximum=int(df_display["Price"].max()),
-                                         value=int(df_display["Price"].min()),
-                                         step=5000,
-                                         label="Minimum Price (₹)")
-            max_price_slider = gr.Slider(minimum=int(df_display["Price"].min()),
-                                         maximum=int(df_display["Price"].max()),
-                                         value=int(df_display["Price"].max()),
-                                         step=5000,
-                                         label="Maximum Price (₹)")
+           min_price_slider = gr.Slider(
+    minimum=int(df_display["Price"].min()),
+    maximum=int(df_display["Price"].max()),
+    value=int(df_display["Price"].min()),
+    step=5000,
+    label="Minimum Price (₹)"
+)
+
+max_price_slider = gr.Slider(
+    minimum=int(df_display["Price"].min()),
+    maximum=int(df_display["Price"].max()),
+    value=int(df_display["Price"].max()),
+    step=5000,
+    label="Maximum Price (₹)"
+)
+
             price_btn = gr.Button("Filter Laptops")
             price_output = gr.Markdown()
             price_btn.click(filter_price,inputs=[min_price_slider,max_price_slider],outputs=price_output)
