@@ -4,27 +4,26 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import NearestNeighbors
 import urllib.parse
-import openai
+from openai import OpenAI
 import os
 
 # ================= CONFIG =================
 st.set_page_config(page_title="Laptop Finder AI", layout="wide")
 
 # ================= OPENAI API =================
-# Use environment variable for safety
-openai.api_key = os.getenv("OPENAI_API_KEY")
-# For testing only, you can directly assign your key (not recommended for public)
-# openai.api_key = "YOUR_API_KEY_HERE"
+# Make sure you set your API key as an environment variable
+# export OPENAI_API_KEY="sk-XXXX"
+client = OpenAI()  # automatically reads OPENAI_API_KEY
 
 def ai_answer_api(question):
     try:
-        prompt = f"You are a laptop expert. Answer user's question in simple and concise way. Question: {question}"
-        response = openai.ChatCompletion.create(
+        prompt = f"You are a laptop expert. Answer the user's question in simple, clear, and concise way. Question: {question}"
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role":"user","content":prompt}],
             max_tokens=200
         )
-        return response['choices'][0]['message']['content']
+        return response.choices[0].message.content
     except Exception as e:
         return f"Error: {e}"
 
