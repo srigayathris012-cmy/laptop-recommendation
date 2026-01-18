@@ -11,9 +11,14 @@ import os
 st.set_page_config(page_title="Laptop Finder AI", layout="wide")
 
 # ================= OPENAI API =================
-# Make sure you set your API key as an environment variable
-# export OPENAI_API_KEY="sk-XXXX"
-client = OpenAI()  # automatically reads OPENAI_API_KEY
+# Try reading API key from environment variable first
+OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+
+# Fallback: set your key directly (for testing only!)
+if not OPENAI_KEY:
+    OPENAI_KEY = "sk-XXXX-your-api-key-XXXX"  # <-- replace with your key
+
+client = OpenAI(api_key=OPENAI_KEY)
 
 def ai_answer_api(question):
     try:
@@ -36,7 +41,7 @@ def load_data():
 
     def clean_price(x):
         try:
-            return int(str(x).replace("₹", "").replace(",", "").strip())
+            return int(str(x).replace("₹","").replace(",","").strip())
         except:
             return np.nan
 
