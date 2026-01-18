@@ -192,9 +192,5 @@ with gr.Tab("💰 Price Filter"):
         outputs=price_output
     )
 
-        
-        # --- Laptop Use Case Advisor Tab ---
-  )
-
 # ---------------- LAUNCH ----------------
 app.launch()
