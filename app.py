@@ -50,7 +50,7 @@ knn = NearestNeighbors(n_neighbors=5)
 knn.fit(X_scaled)
 
 # ---------------- OPENAI CONFIG ----------------
-openai.api_key = "YOUR_OPENAI_API_KEY"  # <-- Replace with your key
+openai.api_key = "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"  # <-- Replace with your key
 
 # ---------------- SIDEBAR AI TOOL ----------------
 st.sidebar.title("🤖 AI Assistant")
