@@ -264,39 +264,144 @@ knn.fit(X_scaled)
 # ================= SIDEBAR AI ASSISTANT =================
 st.sidebar.markdown("<h2 style='text-align: center;'>🤖 AI Assistant</h2>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
-user_question = st.sidebar.text_input("💬 Ask me anything about laptops:", placeholder="e.g., best gaming laptop")
+user_question = st.sidebar.text_input("💬 Ask me anything about laptops:", placeholder="e.g., best gaming laptop under 60k")
 
-def ai_answer(question):
+def get_laptop_context():
+    """Prepare laptop data context for AI"""
+    # Get sample of laptops for context
+    top_laptops = df.nlargest(10, 'Rating')[['Model', 'Price', 'Ram', 'SSD', 'Graphics', 'Rating']]
+    budget_laptops = df[df['Price'] <= 60000].nlargest(5, 'Rating')[['Model', 'Price', 'Ram', 'SSD', 'Rating']]
+    gaming_laptops = df[df['Graphics_Flag'] == 1].nlargest(5, 'Rating')[['Model', 'Price', 'Ram', 'SSD', 'Graphics', 'Rating']]
+    
+    context = f"""
+You are a laptop recommendation expert. Here's information about our laptop database:
+
+Total laptops available: {len(df)}
+Price range: ₹{df['Price'].min():,} to ₹{df['Price'].max():,}
+Average price: ₹{df['Price'].mean():,.0f}
+
+TOP RATED LAPTOPS:
+{top_laptops.to_string(index=False)}
+
+BEST BUDGET LAPTOPS (Under ₹60,000):
+{budget_laptops.to_string(index=False)}
+
+BEST GAMING LAPTOPS:
+{gaming_laptops.to_string(index=False)}
+
+Please provide helpful, specific recommendations based on the user's question. Include model names, prices, and key specs when relevant.
+"""
+    return context
+
+async def ai_answer_smart(question):
+    """AI-powered answer using Claude API"""
+    try:
+        import aiohttp
+        
+        context = get_laptop_context()
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "Content-Type": "application/json",
+                    "anthropic-version": "2023-06-01"
+                },
+                json={
+                    "model": "claude-sonnet-4-20250514",
+                    "max_tokens": 1000,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": f"{context}\n\nUser Question: {question}\n\nProvide a helpful, concise answer with specific laptop recommendations when appropriate."
+                        }
+                    ]
+                }
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    answer = ""
+                    for block in data.get("content", []):
+                        if block.get("type") == "text":
+                            answer += block.get("text", "")
+                    return answer if answer else "I apologize, but I couldn't generate a response. Please try again."
+                else:
+                    # Fallback to basic answers
+                    return get_basic_answer(question)
+    except Exception as e:
+        # Fallback to basic answers
+        return get_basic_answer(question)
+
+def get_basic_answer(question):
+    """Fallback basic answers"""
     q = str(question).lower()
-    response = "Sorry, I cannot answer that."
     
     if "gaming" in q:
         best = df[df["Graphics_Flag"] == 1].sort_values(["Rating","Price"], ascending=[False,True]).iloc[0]
-        response = f"🎮 **Best gaming laptop:** {best['Model']}\n\n💾 {best['Ram']} RAM | 💿 {best['SSD']} SSD\n⭐ Rating: {best['Rating']}"
-    elif "student" in q:
-        best = df[(df["Price"] <= 60000) & (df["Rating"] >= 3)].sort_values(["Rating","Price"], ascending=[False,True]).iloc[0]
-        response = f"📚 **Best student laptop:** {best['Model']}\n\n💰 ₹{best['Price']:,} | 💾 {best['Ram']}\n⭐ Rating: {best['Rating']}"
-    elif "value" in q:
-        df["Value_Score"] = (df["Ram_GB"]*2 + df["SSD_GB"]/256 + df["Rating"]*5)/df["Price"]
-        best = df.sort_values("Value_Score", ascending=False).iloc[0]
-        response = f"💰 **Best value for money:** {best['Model']}\n\n📊 Value Score: {best['Value_Score']:.4f}"
-    elif "longevity" in q or "future" in q:
-        scores = []
-        for _, r in df.iterrows():
-            score = 0
-            score += 40 if r["Ram_GB"] >=16 else 20
-            score += 30 if r["SSD_GB"]>=512 else 15
-            score += 20 if r["Graphics_Flag"]==1 else 10
-            scores.append(score)
-        df["Longevity_Score"] = scores
-        best = df.sort_values("Longevity_Score", ascending=False).iloc[0]
-        response = f"🔮 **Most future-proof:** {best['Model']}\n\n⏳ Longevity Score: {best['Longevity_Score']}/100"
+        return f"🎮 **Best gaming laptop:** {best['Model']}\n\n💰 ₹{best['Price']:,} | 💾 {best['Ram']} | 💿 {best['SSD']}\n⭐ Rating: {best['Rating']}\n\nThis laptop has dedicated graphics which is perfect for gaming!"
     
-    return response
+    elif "student" in q or "budget" in q:
+        best = df[(df["Price"] <= 60000) & (df["Rating"] >= 3)].sort_values(["Rating","Price"], ascending=[False,True]).iloc[0]
+        return f"📚 **Best student laptop:** {best['Model']}\n\n💰 ₹{best['Price']:,} | 💾 {best['Ram']} | 💿 {best['SSD']}\n⭐ Rating: {best['Rating']}\n\nGreat for students with good specs at an affordable price!"
+    
+    elif "value" in q or "money" in q:
+        df_temp = df.copy()
+        df_temp["Value_Score"] = (df_temp["Ram_GB"]*2 + df_temp["SSD_GB"]/256 + df_temp["Rating"]*5)/df_temp["Price"]
+        best = df_temp.sort_values("Value_Score", ascending=False).iloc[0]
+        return f"💰 **Best value for money:** {best['Model']}\n\n💰 ₹{best['Price']:,} | 💾 {best['Ram']} | 💿 {best['SSD']}\n⭐ Rating: {best['Rating']}\n📊 Value Score: {best['Value_Score']:.4f}\n\nThis gives you the most features for your money!"
+    
+    elif "program" in q or "coding" in q or "developer" in q:
+        best = df[(df["Ram_GB"] >= 8) & (df["SSD_GB"] >= 512)].sort_values(["Rating","Price"], ascending=[False,True]).iloc[0]
+        return f"💻 **Best for programming:** {best['Model']}\n\n💰 ₹{best['Price']:,} | 💾 {best['Ram']} | 💿 {best['SSD']}\n⭐ Rating: {best['Rating']}\n\nGreat specs for coding with sufficient RAM and fast SSD!"
+    
+    elif "video" in q or "editing" in q or "creative" in q:
+        best = df[(df["Graphics_Flag"] == 1) & (df["SSD_GB"] >= 512)].sort_values(["Rating","Price"], ascending=[False,True]).iloc[0]
+        return f"🎬 **Best for video editing:** {best['Model']}\n\n💰 ₹{best['Price']:,} | 💾 {best['Ram']} | 💿 {best['SSD']}\n⭐ Rating: {best['Rating']}\n\nDedicated graphics and large storage perfect for editing!"
+    
+    elif "future" in q or "longevity" in q:
+        best = df[(df["Ram_GB"] >= 16) & (df["SSD_GB"] >= 512) & (df["Graphics_Flag"] == 1)].sort_values(["Rating","Price"], ascending=[False,True])
+        if len(best) > 0:
+            best = best.iloc[0]
+            return f"🔮 **Most future-proof:** {best['Model']}\n\n💰 ₹{best['Price']:,} | 💾 {best['Ram']} | 💿 {best['SSD']}\n⭐ Rating: {best['Rating']}\n\nHigh RAM, large SSD, and dedicated graphics for years to come!"
+    
+    elif "cheap" in q or "affordable" in q or "low price" in q:
+        best = df[df["Price"] <= 40000].sort_values(["Rating","Price"], ascending=[False,True])
+        if len(best) > 0:
+            best = best.iloc[0]
+            return f"💵 **Most affordable option:** {best['Model']}\n\n💰 ₹{best['Price']:,} | 💾 {best['Ram']} | 💿 {best['SSD']}\n⭐ Rating: {best['Rating']}\n\nBest rated laptop in the budget category!"
+    
+    elif "office" in q or "work" in q or "business" in q:
+        best = df[(df["Ram_GB"] >= 8) & (df["Price"] <= 70000)].sort_values(["Rating","Price"], ascending=[False,True]).iloc[0]
+        return f"💼 **Best for office work:** {best['Model']}\n\n💰 ₹{best['Price']:,} | 💾 {best['Ram']} | 💿 {best['SSD']}\n⭐ Rating: {best['Rating']}\n\nPerfect for productivity with good specs at reasonable price!"
+    
+    elif "price" in q and any(word in q for word in ["how much", "cost", "expensive"]):
+        avg_price = df["Price"].mean()
+        min_price = df["Price"].min()
+        max_price = df["Price"].max()
+        return f"💰 **Price Information:**\n\n📊 Average: ₹{avg_price:,.0f}\n📉 Lowest: ₹{min_price:,}\n📈 Highest: ₹{max_price:,}\n\nMost laptops range from ₹30,000 to ₹1,00,000"
+    
+    elif "?" in q or "recommend" in q:
+        top_rated = df.nlargest(3, 'Rating')
+        response = "🏆 **Top 3 Recommended Laptops:**\n\n"
+        for idx, (_, laptop) in enumerate(top_rated.iterrows(), 1):
+            response += f"{idx}. **{laptop['Model']}**\n   💰 ₹{laptop['Price']:,} | ⭐ {laptop['Rating']}\n\n"
+        return response
+    
+    return f"🤔 I can help you find the perfect laptop! Try asking:\n\n• 'Best gaming laptop'\n• 'Laptop for students under 60k'\n• 'Best value for money'\n• 'Laptop for programming'\n• 'Future-proof laptop'\n\nOr use the tabs above to explore options!"
 
 if user_question:
     st.sidebar.markdown("### 💡 Answer")
-    st.sidebar.success(ai_answer(user_question))
+    with st.sidebar:
+        with st.spinner("🤔 Thinking..."):
+            # Try to use AI, fallback to basic if it fails
+            try:
+                import asyncio
+                answer = asyncio.run(ai_answer_smart(user_question))
+                st.success(answer)
+            except:
+                # If async fails, use basic answers
+                answer = get_basic_answer(user_question)
+                st.success(answer)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📊 Quick Stats")
