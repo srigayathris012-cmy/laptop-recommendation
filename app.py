@@ -491,7 +491,7 @@ with tabs[3]:
     overall_score = (budget_score + ram_score + ssd_score + rating_score)/4
     
     st.markdown("#### 🎯 Overall Confidence Score")
-    st.progress(overall_score/100)
+    st.progress(min(1.0, max(0.0, overall_score/100)))
     st.markdown(f"<h2 style='text-align: center; color: #667eea;'>{overall_score:.1f}%</h2>", unsafe_allow_html=True)
     
     # Two column layout for insights
@@ -508,7 +508,7 @@ with tabs[3]:
         longevity += 30 if row["SSD_GB"]>=512 else 15
         longevity += 20 if row["Graphics_Flag"]==1 else 10
         longevity += 10 if row["Rating"]>=4 else 5
-        st.progress(longevity/100)
+        st.progress(min(1.0, max(0.0, longevity/100)))
         st.markdown(f"**{longevity}/100** - " + ("Excellent" if longevity>=80 else "Good" if longevity>=60 else "Moderate"))
     
     with col2:
@@ -518,13 +518,13 @@ with tabs[3]:
         edit_fit = 88 if row['SSD_GB']>=512 else 60
         
         st.markdown(f"🎮 **Gaming:** {gaming_fit}%")
-        st.progress(gaming_fit/100)
+        st.progress(min(1.0, max(0.0, gaming_fit/100)))
         
         st.markdown(f"💻 **Programming:** {prog_fit}%")
-        st.progress(prog_fit/100)
+        st.progress(min(1.0, max(0.0, prog_fit/100)))
         
         st.markdown(f"🎬 **Video Editing:** {edit_fit}%")
-        st.progress(edit_fit/100)
+        st.progress(min(1.0, max(0.0, edit_fit/100)))
         
         st.markdown(f"📄 **Office Work:** 92%")
         st.progress(0.92)
