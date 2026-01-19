@@ -41,6 +41,15 @@ st.markdown("""
         border-radius: 20px;
         padding: 2rem 3rem;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        color: #1f2937;
+    }
+    
+    .block-container h1, .block-container h2, .block-container h3, .block-container h4 {
+        color: #111827;
+    }
+    
+    .block-container p, .block-container span, .block-container div {
+        color: #374151;
     }
     
     /* Sidebar styling */
@@ -79,6 +88,11 @@ st.markdown("""
         border-left: 5px solid #667eea;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
+        color: #1f2937;
+    }
+    
+    .laptop-card h3, .laptop-card h4 {
+        color: #111827;
     }
     
     .laptop-card:hover {
@@ -341,14 +355,14 @@ with tabs[0]:
             
             st.markdown(f"""
             <div class='laptop-card'>
-                <h3>{rank_color} {row['Model']}</h3>
-                <div style='display: flex; justify-content: space-between; flex-wrap: wrap; margin: 1rem 0;'>
+                <h3 style='color: #111827;'>{rank_color} {row['Model']}</h3>
+                <div style='display: flex; justify-content: space-between; flex-wrap: wrap; margin: 1rem 0; color: #374151;'>
                     <span><strong>💰 Price:</strong> ₹{row['Price']:,}</span>
                     <span><strong>💾 RAM:</strong> {row['Ram']}</span>
                     <span><strong>💿 Storage:</strong> {row['SSD']}</span>
                     <span><strong>⭐ Rating:</strong> {row['Rating']}</span>
                 </div>
-                <div style='margin: 1rem 0;'>
+                <div style='margin: 1rem 0; color: #374151;'>
                     <strong>🎮 Graphics:</strong> {row['Graphics']}
                 </div>
                 <div style='display: flex; justify-content: space-between; align-items: center;'>
@@ -384,8 +398,8 @@ with tabs[1]:
                 link = "https://www.amazon.in/s?k=" + urllib.parse.quote(row["Model"])
                 st.markdown(f"""
                 <div class='laptop-card'>
-                    <h4>{row['Model']}</h4>
-                    <div style='display: flex; justify-content: space-between; margin: 1rem 0;'>
+                    <h4 style='color: #111827;'>{row['Model']}</h4>
+                    <div style='display: flex; justify-content: space-between; margin: 1rem 0; color: #374151;'>
                         <span>💰 ₹{row['Price']:,}</span>
                         <span>💾 {row['Ram']}</span>
                         <span>💿 {row['SSD']}</span>
@@ -420,8 +434,8 @@ with tabs[2]:
         link = "https://www.amazon.in/s?k=" + urllib.parse.quote(row["Model"])
         st.markdown(f"""
         <div class='laptop-card'>
-            <h4>{row['Model']}</h4>
-            <div style='display: flex; justify-content: space-between; align-items: center;'>
+            <h4 style='color: #111827;'>{row['Model']}</h4>
+            <div style='display: flex; justify-content: space-between; align-items: center; color: #374151;'>
                 <div>
                     <span style='font-size: 1.3rem; font-weight: 700; color: #667eea;'>₹{row['Price']:,}</span>
                     <span style='margin-left: 1rem;'>⭐ {row['Rating']}</span>
@@ -559,14 +573,14 @@ with tabs[4]:
         
         st.markdown(f"""
         <div class='laptop-card'>
-            <h3>{medal} {row['Model']}</h3>
-            <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1rem 0;'>
+            <h3 style='color: #111827;'>{medal} {row['Model']}</h3>
+            <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1rem 0; color: #374151;'>
                 <div><strong>💰 Price:</strong> ₹{row['Price']:,}</div>
                 <div><strong>💾 RAM:</strong> {row['Ram']}</div>
                 <div><strong>💿 Storage:</strong> {row['SSD']}</div>
                 <div><strong>⭐ Rating:</strong> {row['Rating']}</div>
             </div>
-            <div style='margin: 1rem 0;'>
+            <div style='margin: 1rem 0; color: #374151;'>
                 <strong>🎮 Graphics:</strong> {row['Graphics']}
             </div>
             <div style='display: flex; justify-content: space-between; align-items: center;'>
