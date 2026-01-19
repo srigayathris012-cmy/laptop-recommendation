@@ -142,46 +142,17 @@ st.markdown("""
     
     /* Input fields */
     .stTextInput > div > div > input,
-    .stSelectbox > div > div > select,
-    .stSelectbox > div > div,
-    [data-baseweb="select"] > div {
-        background-color: #ffffff !important;
-        border-radius: 10px !important;
-        border: 2px solid #e5e7eb !important;
-        padding: 0.75rem !important;
-        transition: border-color 0.3s ease !important;
-        color: #1f2937 !important;
+    .stSelectbox > div > div > select {
+        border-radius: 10px;
+        border: 2px solid #e5e7eb;
+        padding: 0.75rem;
+        transition: border-color 0.3s ease;
     }
     
     .stTextInput > div > div > input:focus,
     .stSelectbox > div > div > select:focus {
-        border-color: #667eea !important;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
-        background-color: #ffffff !important;
-    }
-    
-    /* Selectbox specific styling */
-    [data-baseweb="select"] {
-        background-color: #ffffff !important;
-    }
-    
-    [data-baseweb="select"] > div {
-        background-color: #ffffff !important;
-        color: #1f2937 !important;
-    }
-    
-    /* Dropdown menu */
-    [role="listbox"] {
-        background-color: #ffffff !important;
-    }
-    
-    [role="option"] {
-        background-color: #ffffff !important;
-        color: #1f2937 !important;
-    }
-    
-    [role="option"]:hover {
-        background-color: #f3f4f6 !important;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
     
     /* Slider styling */
